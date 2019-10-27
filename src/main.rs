@@ -11,6 +11,8 @@ use std::path::Path;
 use std::thread::sleep;
 use std::time::Duration;
 
+mod tracker;
+
 const USBBTN_VENDOR_ID: u16 = 0xD209;
 const USBBTN_PRODUCT_ID: u16 = 0x1200;
 const USBBTN_INTERFACE: u16 = 0;
