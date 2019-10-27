@@ -4,8 +4,8 @@ const WORK_DURATION: Duration = Duration::from_secs(20 * 60);
 const SHORT_BREAK_DURATION: Duration = Duration::from_secs(5 * 60);
 const LONG_BREAK_DURATION: Duration = Duration::from_secs(15 * 60);
 
-#[derive(Debug, PartialEq)]
-enum State {
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+pub enum State {
     PendingWork,
     Working,
     PendingShortBreak,
@@ -15,7 +15,7 @@ enum State {
 }
 
 pub struct Tracker {
-    state: State,
+    pub state: State,
     entered_state: Instant,
     intervals: u64,
 }
