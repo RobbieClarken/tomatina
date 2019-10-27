@@ -9,6 +9,7 @@ const UM_REQUEST_TYPE: u8 = 0x21;
 const UM_REQUEST: u8 = 9;
 const TIMEOUT: Duration = Duration::from_millis(2000);
 
+#[allow(dead_code)]
 enum ButtonAction {
     Alternate = 0,
     Extended = 1,

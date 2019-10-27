@@ -1,14 +1,10 @@
-#![allow(dead_code)]
-extern crate libusb;
-
-mod manager;
 mod button;
+mod manager;
 mod tracker;
 
-use std::io::Result;
+extern crate libusb;
 
-fn main() -> Result<()> {
+fn main() {
     let mgr = manager::Manager {};
     mgr.run();
-    Ok(())
 }
