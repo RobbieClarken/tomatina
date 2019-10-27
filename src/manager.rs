@@ -38,6 +38,7 @@ impl Manager {
         let mut tracker = Tracker::new();
         let mut signal = ButtonSignal::create().expect("failed to create pipe to button");
         button.configure(colors.get(&tracker.state).unwrap());
+        let loop_interval = Duration::from_millis(50);
         loop {
             let init_state = tracker.state;
             match signal.poll() {
@@ -52,7 +53,17 @@ impl Manager {
                 println!("State changed from {:?} to {:?}", init_state, tracker.state);
                 button.set_color(colors.get(&tracker.state).unwrap());
             }
-            sleep(Duration::from_millis(50));
+            if let Some(t) = tracker.time_remaining(Instant::now()) {
+                if let Some(t) = loggable_time_remaining(t, loop_interval) {
+                    println!(
+                        "Time remaining in state {:?}: {}:{:02}",
+                        tracker.state,
+                        t.as_secs() / 60,
+                        t.as_secs() % 60
+                    );
+                }
+            }
+            sleep(loop_interval);
         }
     }
 }
@@ -96,5 +107,50 @@ impl ButtonSignal {
                 None
             }
         }
+    }
+}
+
+fn loggable_time_remaining(time_remaining: Duration, loop_interval: Duration) -> Option<Duration> {
+    let half_interval = loop_interval / 2;
+    if (time_remaining + half_interval).as_millis() % 60_000 <= loop_interval.as_millis() {
+        Some(Duration::from_secs(
+            (time_remaining + half_interval).as_secs(),
+        ))
+    } else {
+        None
+    }
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_loggable_time_remaining_returns_None_if_not_near_a_multiple_of_1_minute() {
+        assert_eq!(
+            loggable_time_remaining(Duration::from_millis(90_000), Duration::from_millis(50)),
+            None
+        );
+        assert_eq!(
+            loggable_time_remaining(Duration::from_millis(60_026), Duration::from_millis(50)),
+            None
+        );
+        assert_eq!(
+            loggable_time_remaining(Duration::from_millis(59_974), Duration::from_millis(50)),
+            None
+        );
+    }
+
+    #[test]
+    fn test_loggable_time_remaining_returns_Some_if_near_a_multiple_of_1_minute() {
+        assert_eq!(
+            loggable_time_remaining(Duration::from_millis(120_025), Duration::from_millis(50)),
+            Some(Duration::from_millis(120_000)),
+        );
+        assert_eq!(
+            loggable_time_remaining(Duration::from_millis(119_975), Duration::from_millis(50)),
+            Some(Duration::from_millis(120_000)),
+        );
     }
 }
