@@ -39,12 +39,9 @@ pub fn run(config: TrackerConfig) {
     println!("Initial state: {:?}", tracker.state);
     loop {
         let init_state = tracker.state;
-        match signal.poll() {
-            Some(ButtonPress::Primary) => {
-                println!("Detected button press");
-                tracker.next();
-            }
-            _ => {}
+        if let Some(ButtonPress::Primary) = signal.poll() {
+            println!("Detected button press");
+            tracker.next();
         }
         tracker.tick(Instant::now());
         if tracker.state != init_state {
@@ -80,7 +77,7 @@ impl ButtonSignal {
             fs::remove_file(path)?;
         }
         let path_str = CString::new(path.to_str().unwrap())?;
-        let result: i32 = unsafe { mkfifo(path_str.as_ptr(), 0o600) }.into();
+        let result = unsafe { mkfifo(path_str.as_ptr(), 0o600) };
         assert_eq!(result, 0);
         let file = fs::OpenOptions::new()
             .read(true)

@@ -35,12 +35,12 @@ pub struct Tracker {
 
 impl Tracker {
     pub fn new(config: TrackerConfig) -> Self {
-        return Self {
+        Self {
             state: State::PendingWork,
             entered_state: Instant::now(),
             intervals: 0,
             config,
-        };
+        }
     }
 
     pub fn next(&mut self) {
