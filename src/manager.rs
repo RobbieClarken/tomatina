@@ -17,7 +17,6 @@ const GREEN: Color = Color(0, 255, 0);
 const BLUE: Color = Color(0, 0, 255);
 const PURPLE: Color = Color(255, 0, 255);
 
-
 pub fn run(config: TrackerConfig) {
     let colors: HashMap<State, Color> = [
         (State::PendingWork, RED),

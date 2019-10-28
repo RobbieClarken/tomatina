@@ -4,8 +4,8 @@ mod tracker;
 
 extern crate libusb;
 
-use structopt::StructOpt;
 use std::time::Duration;
+use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
 #[structopt(about = "Use a USBButton as a pomodoro timer")]

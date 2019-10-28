@@ -95,11 +95,12 @@ impl Tracker {
     }
 
     pub fn time_remaining(&self, now: Instant) -> Option<Duration> {
+        let time_since_entered_state = now - self.entered_state;
         match self.state {
             State::PendingWork | State::PendingShortBreak | State::PendingLongBreak => None,
-            State::Working => Some(self.config.work_duration - (now - self.entered_state)),
-            State::ShortBreak => Some(self.config.short_break_duration - (now - self.entered_state)),
-            State::LongBreak => Some(self.config.long_break_duration - (now - self.entered_state)),
+            State::Working => Some(self.config.work_duration - time_since_entered_state),
+            State::ShortBreak => Some(self.config.short_break_duration - time_since_entered_state),
+            State::LongBreak => Some(self.config.long_break_duration - time_since_entered_state),
         }
     }
 
@@ -166,7 +167,7 @@ mod tests {
 
     #[test]
     fn initial_state_is_PendingWork() {
-        let mut tracker = create_tracker();
+        let tracker = create_tracker();
         assert_eq!(tracker.state, State::PendingWork);
     }
 
@@ -330,29 +331,28 @@ mod tests {
 
     #[test]
     fn exposes_time_remaining_in_state() {
-        let now = Instant::now();
-        let five_seconds = Duration::from_secs(5);
+        let five_secs = Duration::from_secs(5);
         let mut tracker = create_tracker();
 
         // PendingWork
-        assert_eq!(tracker.time_remaining(now), None);
+        assert_eq!(tracker.time_remaining(Instant::now()), None);
 
         // Working
         tracker.next();
         assert_approx_eq!(
-            tracker.time_remaining(now + five_seconds).unwrap(),
-            WORK_DURATION - five_seconds
+            tracker.time_remaining(Instant::now() + five_secs).unwrap(),
+            WORK_DURATION - five_secs
         );
 
         // PendingShortBreak
         tracker.tick(Instant::now() + WORK_DURATION);
-        assert_eq!(tracker.time_remaining(now), None);
+        assert_eq!(tracker.time_remaining(Instant::now()), None);
 
         // ShortBreak
         tracker.next();
         assert_approx_eq!(
-            tracker.time_remaining(now + five_seconds).unwrap(),
-            SHORT_BREAK_DURATION - five_seconds
+            tracker.time_remaining(Instant::now() + five_secs).unwrap(),
+            SHORT_BREAK_DURATION - five_secs
         );
 
         // PendingLongBreak
@@ -362,13 +362,13 @@ mod tests {
         work(&mut tracker);
         short_break(&mut tracker);
         work(&mut tracker);
-        assert_eq!(tracker.time_remaining(now), None);
+        assert_eq!(tracker.time_remaining(Instant::now()), None);
 
         // LongBreak
         tracker.next();
         assert_approx_eq!(
-            tracker.time_remaining(now + five_seconds).unwrap(),
-            LONG_BREAK_DURATION - five_seconds
+            tracker.time_remaining(Instant::now() + five_secs).unwrap(),
+            LONG_BREAK_DURATION - five_secs
         );
     }
 
