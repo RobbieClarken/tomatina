@@ -1,5 +1,5 @@
 use crate::button::{Button, Color};
-use crate::tracker::{State, Tracker};
+use crate::tracker::{State, Tracker, TrackerConfig};
 
 use libc::mkfifo;
 use std::collections::HashMap;
@@ -17,54 +17,51 @@ const GREEN: Color = Color(0, 255, 0);
 const BLUE: Color = Color(0, 0, 255);
 const PURPLE: Color = Color(255, 0, 255);
 
-pub struct Manager {}
 
-impl Manager {
-    pub fn run(&self) {
-        let colors: HashMap<State, Color> = [
-            (State::PendingWork, RED),
-            (State::Working, GREEN),
-            (State::PendingShortBreak, RED),
-            (State::ShortBreak, BLUE),
-            (State::PendingLongBreak, RED),
-            (State::LongBreak, PURPLE),
-        ]
-        .iter()
-        .cloned()
-        .collect();
+pub fn run(config: TrackerConfig) {
+    let colors: HashMap<State, Color> = [
+        (State::PendingWork, RED),
+        (State::Working, GREEN),
+        (State::PendingShortBreak, RED),
+        (State::ShortBreak, BLUE),
+        (State::PendingLongBreak, RED),
+        (State::LongBreak, PURPLE),
+    ]
+    .iter()
+    .cloned()
+    .collect();
 
-        let context = libusb::Context::new().unwrap();
-        let button = Button::connect(&context);
-        let mut tracker = Tracker::new(Default::default());
-        let mut signal = ButtonSignal::create().expect("failed to create pipe to button");
-        button.configure(colors.get(&tracker.state).unwrap());
-        let loop_interval = Duration::from_millis(50);
-        loop {
-            let init_state = tracker.state;
-            match signal.poll() {
-                Some(ButtonPress::Primary) => {
-                    println!("Detected button press");
-                    tracker.next();
-                }
-                _ => {}
+    let context = libusb::Context::new().unwrap();
+    let button = Button::connect(&context);
+    let mut tracker = Tracker::new(config);
+    let mut signal = ButtonSignal::create().expect("failed to create pipe to button");
+    button.configure(colors.get(&tracker.state).unwrap());
+    let loop_interval = Duration::from_millis(50);
+    println!("Initial state: {:?}", tracker.state);
+    loop {
+        let init_state = tracker.state;
+        match signal.poll() {
+            Some(ButtonPress::Primary) => {
+                println!("Detected button press");
+                tracker.next();
             }
-            tracker.tick(Instant::now());
-            if tracker.state != init_state {
-                println!("State changed from {:?} to {:?}", init_state, tracker.state);
-                button.set_color(colors.get(&tracker.state).unwrap());
-            }
-            if let Some(t) = tracker.time_remaining(Instant::now()) {
-                if let Some(t) = loggable_time_remaining(t, loop_interval) {
-                    println!(
-                        "Time remaining in state {:?}: {}:{:02}",
-                        tracker.state,
-                        t.as_secs() / 60,
-                        t.as_secs() % 60
-                    );
-                }
-            }
-            sleep(loop_interval);
+            _ => {}
         }
+        tracker.tick(Instant::now());
+        if tracker.state != init_state {
+            println!("State changed from {:?} to {:?}", init_state, tracker.state);
+            button.set_color(colors.get(&tracker.state).unwrap());
+        }
+        if let Some(t) = tracker.time_remaining(Instant::now()) {
+            if let Some(t) = loggable_time_remaining(t, loop_interval) {
+                println!(
+                    "Time remaining in state {:?}: {} mins",
+                    tracker.state,
+                    t.as_secs() / 60,
+                );
+            }
+        }
+        sleep(loop_interval);
     }
 }
 

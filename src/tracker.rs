@@ -1,9 +1,9 @@
 use std::time::{Duration, Instant};
 
 pub struct TrackerConfig {
-    work_duration: Duration,
-    short_break_duration: Duration,
-    long_break_duration: Duration,
+    pub work_duration: Duration,
+    pub short_break_duration: Duration,
+    pub long_break_duration: Duration,
 }
 
 impl Default for TrackerConfig {

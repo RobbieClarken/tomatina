@@ -92,7 +92,7 @@ impl<'a> Button<'a> {
                 UM_REQUEST,
                 USBBTN_VALUE,
                 USBBTN_INTERFACE,
-                &[1, color.0 as u8, color.1 as u8, color.2 as u8],
+                &[1, color.0, color.1, color.2],
                 TIMEOUT,
             )
             .expect("transfer failed");
