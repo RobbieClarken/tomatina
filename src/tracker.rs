@@ -34,13 +34,23 @@ impl Tracker {
             State::PendingWork => {
                 self.enter_state(State::Working);
             }
+            State::Working => {
+                self.intervals += 1;
+                if self.intervals % 4 == 0 {
+                    self.enter_state(State::LongBreak);
+                } else {
+                    self.enter_state(State::ShortBreak);
+                }
+            }
             State::PendingShortBreak => {
                 self.enter_state(State::ShortBreak);
             }
             State::PendingLongBreak => {
                 self.enter_state(State::LongBreak);
             }
-            State::Working | State::ShortBreak | State::LongBreak => {}
+            State::ShortBreak | State::LongBreak => {
+                self.enter_state(State::Working);
+            }
         }
     }
 
@@ -50,10 +60,10 @@ impl Tracker {
             State::Working => {
                 if now.duration_since(self.entered_state) >= WORK_DURATION {
                     self.intervals += 1;
-                    if self.intervals % 4 != 0 {
-                        self.enter_state(State::PendingShortBreak);
-                    } else {
+                    if self.intervals % 4 == 0 {
                         self.enter_state(State::PendingLongBreak);
+                    } else {
+                        self.enter_state(State::PendingShortBreak);
                     }
                 }
             }
@@ -146,11 +156,11 @@ mod tests {
     }
 
     #[test]
-    fn calling_next_transitions_from_Working_doesnt_transition() {
+    fn calling_next_transitions_from_Working_to_ShortBreak() {
         let mut tracker = Tracker::new();
         tracker.next();
         tracker.next();
-        assert_eq!(tracker.state, State::Working);
+        assert_eq!(tracker.state, State::ShortBreak);
     }
 
     #[test]
@@ -178,13 +188,20 @@ mod tests {
     }
 
     #[test]
-    fn calling_next_from_PendingShortBreak_transitions_to_short_break() {
+    fn calling_next_from_PendingShortBreak_transitions_to_ShortBreak() {
         let mut tracker = Tracker::new();
         tracker.next();
         tracker.tick(Instant::now() + WORK_DURATION);
         assert_eq!(tracker.state, State::PendingShortBreak);
         tracker.next();
         assert_eq!(tracker.state, State::ShortBreak);
+    }
+
+    #[test]
+    fn calling_next_from_ShortBreak_transitions_to_Working() {
+        let mut tracker = tracker_at_short_break();
+        tracker.next();
+        assert_eq!(tracker.state, State::Working);
     }
 
     #[test]
@@ -226,6 +243,14 @@ mod tests {
         let mut tracker = tracker_at_pending_long_break();
         tracker.next();
         assert_eq!(tracker.state, State::LongBreak);
+    }
+
+    #[test]
+    fn calling_next_from_LongBreak_transitions_to_Working() {
+        let mut tracker = tracker_at_pending_long_break();
+        tracker.next(); // -> LongBreak
+        tracker.next();
+        assert_eq!(tracker.state, State::Working);
     }
 
     #[test]
@@ -323,5 +348,30 @@ mod tests {
             tracker.time_remaining(now + five_seconds).unwrap(),
             LONG_BREAK_DURATION - five_seconds
         );
+    }
+
+    #[test]
+    fn calling_next_repeatedly_cycles_correctly() {
+        let mut tracker = Tracker::new();
+        // 1st interval
+        tracker.next();
+        assert_eq!(tracker.state, State::Working);
+        tracker.next();
+        assert_eq!(tracker.state, State::ShortBreak);
+        // 2nd interval
+        tracker.next();
+        assert_eq!(tracker.state, State::Working);
+        tracker.next();
+        assert_eq!(tracker.state, State::ShortBreak);
+        // 3rd interval
+        tracker.next();
+        assert_eq!(tracker.state, State::Working);
+        tracker.next();
+        assert_eq!(tracker.state, State::ShortBreak);
+        // 4th interval
+        tracker.next();
+        assert_eq!(tracker.state, State::Working);
+        tracker.next();
+        assert_eq!(tracker.state, State::LongBreak);
     }
 }
