@@ -35,7 +35,7 @@ impl Manager {
 
         let context = libusb::Context::new().unwrap();
         let button = Button::connect(&context);
-        let mut tracker = Tracker::new();
+        let mut tracker = Tracker::new(Default::default());
         let mut signal = ButtonSignal::create().expect("failed to create pipe to button");
         button.configure(colors.get(&tracker.state).unwrap());
         let loop_interval = Duration::from_millis(50);
